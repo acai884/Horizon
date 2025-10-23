@@ -73,7 +73,6 @@
 
   /* 卡片样式 */
   .swiper-slide {
-    width: 100%;
     flex-shrink: 0;
     max-height: var(--desktop-card-height, 500px);
     contain: layout style paint;
@@ -178,6 +177,12 @@
     .swiper-slide {
       max-height: var(--tablet-card-height, 400px);
     }
+    
+    {% if section.settings.enable_sneak_peak_tablet %}
+    .swiper-slide {
+      width: calc(100% / {{ section.settings.tablet_items }} - {{ section.settings.tablet_spacing | minus: 4 }}px);
+    }
+    {% endif %}
   }
 
   /* 桌面端样式 */
@@ -188,23 +193,8 @@
     
     {% if section.settings.enable_sneak_peak_desktop %}
     .swiper-slide {
-      width: 50%;
+      width: calc((100% - 32px) / 3);
       transition: all 0.3s ease;
-    }
-    
-    .swiper-slide-active {
-      width: 60% !important;
-      opacity: 1;
-      transform: scale(1);
-      z-index: 10;
-    }
-    
-    .swiper-slide-next,
-    .swiper-slide-prev {
-      width: 40% !important;
-      opacity: 0.85;
-      transform: scale(0.9);
-      z-index: 5;
     }
     {% endif %}
   }
@@ -220,6 +210,12 @@
       max-height: var(--mobile-card-height);
       flex-shrink: 0;
     }
+    
+    {% if section.settings.enable_sneak_peak_mobile %}
+    .swiper-slide {
+      width: calc(100% / {{ section.settings.mobile_items }} - {{ section.settings.mobile_spacing | minus: 4 }}px);
+    }
+    {% endif %}
     
     .card-title {
       font-size: var(--mobile-title-font-size);
@@ -243,28 +239,30 @@
             ">
               <div class="video-container">
                 {% if block.settings.video_source == 'shopify' and block.settings.video != blank %}
-                  {% render 'video',
-                    video: block.settings.video,
-                    video_class: 'carousel-video',
-                    video_autoplay: false,
-                    video_loop: true,
-                    video_style: 'width: 100%; height: 100%; object-fit: cover;',
-                    disable_controls: true,
-                    additional_attributes: 'loop muted playsinline preload="metadata"'
+                  {% liquid
+                    assign video = block.settings.video
+                    if video.host == 'youtube'
+                      echo video | external_video_url: autoplay: true, loop: true, playlist: video.external_id, mute: 1, controls: 0, enablejsapi: 1 | external_video_tag: class: 'carousel-video', loading: 'lazy'
+                    elsif video.host == 'vimeo'
+                      echo video | external_video_url: autoplay: true, loop: true, muted: 1, controls: 0, api: 1 | external_video_tag: class: 'carousel-video', loading: 'lazy'
+                    else
+                      echo video | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'carousel-video', preload: 'metadata'
+                    endif
                   %}
                 {% elsif block.settings.video_source == 'youtube' and block.settings.video_url != blank %}
-                  <div class="carousel-video-wrapper">
-                    <iframe
-                      id="youtube-{{ section.id }}-{{ block.id }}"
-                      class="carousel-video swiper-lazy"
-                      data-src="https://www.youtube.com/embed/{{ block.settings.video_url.id }}?autoplay=0&mute=1&loop=1&playlist={{ block.settings.video_url.id }}&controls=0&showinfo=0&modestbranding=1&rel=0&enablejsapi=1"
-                      frameborder="0"
-                      allow="autoplay; encrypted-media"
-                      allowfullscreen
-                      loading="lazy"
-                      style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; border-top-left-radius: var(--card-border-radius); border-top-right-radius: var(--card-border-radius);"
-                    ></iframe>
-                  </div>
+                  {% liquid
+                    assign youtube_id = block.settings.video_url.id
+                  %}
+                  <iframe
+                    id="youtube-{{ section.id }}-{{ block.id }}"
+                    class="carousel-video"
+                    src="https://www.youtube.com/embed/{{ youtube_id }}?autoplay=1&mute=1&loop=1&playlist={{ youtube_id }}&controls=0&showinfo=0&modestbranding=1&rel=0&enablejsapi=1"
+                    frameborder="0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    loading="lazy"
+                    style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; border-top-left-radius: var(--card-border-radius); border-top-right-radius: var(--card-border-radius);"
+                  ></iframe>
                 {% else %}
                   <div class="video-placeholder" style="
                     width: 100%;
@@ -378,24 +376,23 @@
             video.setAttribute('data-loaded', 'true');
           }
           
+          video.muted = true;
           video.play().catch(e => {
             console.warn('视频播放失败:', e);
           });
           this.activeVideos.add(video);
         }
         
-        // 处理 YouTube iframe
-        if (iframe) {
-          if (iframe.hasAttribute('data-src')) {
-            iframe.src = iframe.getAttribute('data-src');
-            iframe.removeAttribute('data-src');
+        if (iframe && iframe.id) {
+          if (!this.youtubePlayers.has(iframe.id)) {
+            this.initYouTubePlayer(iframe);
           }
           
-          // 使用 YouTube API 控制播放
-          if (this.youtubePlayersReady && iframe.id) {
+          if (this.youtubePlayersReady) {
             const player = this.youtubePlayers.get(iframe.id);
             if (player && player.playVideo) {
               try {
+                player.mute();
                 player.playVideo();
               } catch (e) {
                 console.warn('YouTube 播放失败:', e);
@@ -505,27 +502,20 @@
             0: {
               effect: 'slide',
               slidesPerView: this.settings.mobileItems,
-              centeredSlides: false,
+              centeredSlides: this.settings.enableSneakPeakMobile,
               spaceBetween: this.settings.mobileSpacing
             },
             769: {
               effect: 'slide',
               slidesPerView: this.settings.tabletItems,
-              centeredSlides: false,
+              centeredSlides: this.settings.enableSneakPeakTablet,
               spaceBetween: this.settings.tabletSpacing
             },
             1025: {
-              effect: this.settings.enableSneakPeakDesktop ? 'coverflow' : 'slide',
-              slidesPerView: 'auto',
+              effect: 'slide',
+              slidesPerView: this.settings.enableSneakPeakDesktop ? 3 : this.settings.desktopItems,
               centeredSlides: this.settings.enableSneakPeakDesktop,
-              spaceBetween: 16,
-              coverflowEffect: this.settings.enableSneakPeakDesktop ? {
-                rotate: 0,
-                stretch: 0,
-                depth: 100,
-                modifier: 2,
-                slideShadows: false
-              } : undefined
+              spaceBetween: 16
             }
           },
           
@@ -631,6 +621,9 @@
       const settings = {
         autoplayDelay: {{ section.settings.autoplay_delay }},
         enableSneakPeakDesktop: {{ section.settings.enable_sneak_peak_desktop | json }},
+        enableSneakPeakTablet: {{ section.settings.enable_sneak_peak_tablet | json }},
+        enableSneakPeakMobile: {{ section.settings.enable_sneak_peak_mobile | json }},
+        desktopItems: {{ section.settings.desktop_items | default: 3 }},
         mobileItems: {{ section.settings.mobile_items }},
         mobileSpacing: {{ section.settings.mobile_spacing }},
         tabletItems: {{ section.settings.tablet_items }},
