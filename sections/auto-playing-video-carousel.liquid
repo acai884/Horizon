@@ -40,13 +40,14 @@
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
     background-color: {{ section.settings.bg_color }};
+    overflow: visible;
   }
 
   .video-carousel-container {
     max-width: var(--container-max-width);
     margin: 0 auto;
     padding: 0 var(--container-padding);
-    container-type: inline-size; /* 启用容器查询 */
+    overflow: visible;
   }
 
   .video-carousel-title {
@@ -58,11 +59,11 @@
   }
 
   /* Swiper容器样式 */
+  .swiper,
   .swiper-container {
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
-    contain: layout style paint;
   }
 
   .swiper-wrapper {
@@ -73,10 +74,19 @@
 
   /* 卡片样式 */
   .swiper-slide {
-    width: 100%;
     flex-shrink: 0;
     max-height: var(--desktop-card-height, 500px);
-    contain: layout style paint;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  
+  /* Peeking效果：非激活卡片轻微透明和缩小 */
+  .swiper-slide:not(.swiper-slide-active) {
+    opacity: 0.6;
+  }
+  
+  .swiper-slide-active {
+    opacity: 1;
+    z-index: 2;
   }
 
   .video-card {
@@ -124,26 +134,27 @@
     height: 100%;
   }
 
-  /* 卡片内容样式 */
-  .card-content {
-    padding: var(--card-padding);
-    flex-grow: 1;
+  .video-card__overlay {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
+    padding: var(--card-padding);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.65) 100%);
+    pointer-events: none;
+    color: #ffffff;
+    border-radius: inherit;
   }
 
-  .card-title {
-    font-size: var(--title-font-size);
-    color: var(--title-color);
-    margin: 0 0 16px 0;
+  .video-card__title {
+    margin: 0;
     font-weight: 600;
     line-height: 1.3;
   }
 
-  .card-description {
-    font-size: var(--description-font-size);
-    color: var(--description-color);
-    margin: 0;
+  .video-card__description {
+    margin: 12px 0 0;
     line-height: 1.6;
   }
 
@@ -178,6 +189,12 @@
     .swiper-slide {
       max-height: var(--tablet-card-height, 400px);
     }
+
+    {% if section.settings.enable_sneak_peak_tablet %}
+    .video-carousel-{{ section.id }} .swiper-slide {
+      width: calc(100% / {{ section.settings.tablet_items }} - {{ section.settings.tablet_spacing | divided_by: 2 }}px);
+    }
+    {% endif %}
   }
 
   /* 桌面端样式 */
@@ -185,26 +202,10 @@
     .swiper-slide {
       max-height: var(--desktop-card-height, 450px);
     }
-    
+
     {% if section.settings.enable_sneak_peak_desktop %}
-    .swiper-slide {
-      width: 50%;
-      transition: all 0.3s ease;
-    }
-    
-    .swiper-slide-active {
-      width: 60% !important;
-      opacity: 1;
-      transform: scale(1);
-      z-index: 10;
-    }
-    
-    .swiper-slide-next,
-    .swiper-slide-prev {
-      width: 40% !important;
-      opacity: 0.85;
-      transform: scale(0.9);
-      z-index: 5;
+    .video-carousel-{{ section.id }} .swiper-slide {
+      width: calc(100% / {{ section.settings.desktop_items }} - {{ section.settings.desktop_spacing | divided_by: 2 }}px);
     }
     {% endif %}
   }
@@ -221,11 +222,17 @@
       flex-shrink: 0;
     }
     
-    .card-title {
+    {% if section.settings.enable_sneak_peak_mobile %}
+    .video-carousel-{{ section.id }} .swiper-slide {
+      width: calc(100% / {{ section.settings.mobile_items }} - {{ section.settings.mobile_spacing | divided_by: 2 }}px);
+    }
+    {% endif %}
+
+    .video-card__title {
       font-size: var(--mobile-title-font-size);
     }
-    
-    .card-description {
+
+    .video-card__description {
       font-size: var(--mobile-description-font-size);
     }
   }
@@ -233,7 +240,7 @@
 
 <section class="section-{{ section.id }}">
   <div class="video-carousel-container">
-    <div class="swiper-container video-carousel-{{ section.id }}">
+    <div class="swiper swiper-container video-carousel-{{ section.id }}">
       <div class="swiper-wrapper">
         {% for block in section.blocks %}
           <div class="swiper-slide block-{{ block.id }}" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
@@ -243,28 +250,30 @@
             ">
               <div class="video-container">
                 {% if block.settings.video_source == 'shopify' and block.settings.video != blank %}
-                  {% render 'video',
-                    video: block.settings.video,
-                    video_class: 'carousel-video',
-                    video_autoplay: false,
-                    video_loop: true,
-                    video_style: 'width: 100%; height: 100%; object-fit: cover;',
-                    disable_controls: true,
-                    additional_attributes: 'loop muted playsinline preload="metadata"'
+                  {% liquid
+                    assign video = block.settings.video
+                    if video.host == 'youtube'
+                      echo video | external_video_url: autoplay: true, loop: true, playlist: video.external_id, mute: 1, controls: 0, enablejsapi: 1 | external_video_tag: class: 'carousel-video', loading: 'lazy'
+                    elsif video.host == 'vimeo'
+                      echo video | external_video_url: autoplay: true, loop: true, muted: 1, controls: 0, api: 1 | external_video_tag: class: 'carousel-video', loading: 'lazy'
+                    else
+                      echo video | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'carousel-video', preload: 'metadata'
+                    endif
                   %}
                 {% elsif block.settings.video_source == 'youtube' and block.settings.video_url != blank %}
-                  <div class="carousel-video-wrapper">
-                    <iframe
-                      id="youtube-{{ section.id }}-{{ block.id }}"
-                      class="carousel-video swiper-lazy"
-                      data-src="https://www.youtube.com/embed/{{ block.settings.video_url.id }}?autoplay=0&mute=1&loop=1&playlist={{ block.settings.video_url.id }}&controls=0&showinfo=0&modestbranding=1&rel=0&enablejsapi=1"
-                      frameborder="0"
-                      allow="autoplay; encrypted-media"
-                      allowfullscreen
-                      loading="lazy"
-                      style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; border-top-left-radius: var(--card-border-radius); border-top-right-radius: var(--card-border-radius);"
-                    ></iframe>
-                  </div>
+                  {% liquid
+                    assign youtube_id = block.settings.video_url.id
+                  %}
+                  <iframe
+                    id="youtube-{{ section.id }}-{{ block.id }}"
+                    class="carousel-video"
+                    src="https://www.youtube.com/embed/{{ youtube_id }}?autoplay=1&mute=1&loop=1&playlist={{ youtube_id }}&controls=0&showinfo=0&modestbranding=1&rel=0&enablejsapi=1"
+                    frameborder="0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                    loading="lazy"
+                    style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; border-top-left-radius: var(--card-border-radius); border-top-right-radius: var(--card-border-radius);"
+                  ></iframe>
                 {% else %}
                   <div class="video-placeholder" style="
                     width: 100%;
@@ -279,21 +288,26 @@
                     <span style="color: #999; font-size: 18px;">视频占位符</span>
                   </div>
                 {% endif %}
-              </div>
-              
-              <div class="card-content">
-                {% if block.settings.title != blank %}
-                  <h3 class="card-title" style="
-                    font-size: {{ block.settings.title_font_size }}px;
-                    color: {{ block.settings.title_color }};
-                  ">{{ block.settings.title }}</h3>
-                {% endif %}
-                
-                {% if block.settings.description != blank %}
-                  <p class="card-description" style="
-                    font-size: {{ block.settings.description_font_size }}px;
-                    color: {{ block.settings.description_color }};
-                  ">{{ block.settings.description }}</p>
+
+                {% liquid
+                  assign title_text = block.settings.title
+                  assign description_text = block.settings.description
+                %}
+                {% if title_text != blank or description_text != blank %}
+                  <div class="video-card__overlay">
+                    {% if title_text != blank %}
+                      <h3 class="video-card__title" style="
+                        font-size: {{ block.settings.title_font_size }}px;
+                        color: {{ block.settings.title_color }};
+                      ">{{ title_text }}</h3>
+                    {% endif %}
+                    {% if description_text != blank %}
+                      <p class="video-card__description" style="
+                        font-size: {{ block.settings.description_font_size }}px;
+                        color: {{ block.settings.description_color }};
+                      ">{{ description_text }}</p>
+                    {% endif %}
+                  </div>
                 {% endif %}
               </div>
             </div>
@@ -378,24 +392,23 @@
             video.setAttribute('data-loaded', 'true');
           }
           
+          video.muted = true;
           video.play().catch(e => {
             console.warn('视频播放失败:', e);
           });
           this.activeVideos.add(video);
         }
         
-        // 处理 YouTube iframe
-        if (iframe) {
-          if (iframe.hasAttribute('data-src')) {
-            iframe.src = iframe.getAttribute('data-src');
-            iframe.removeAttribute('data-src');
+        if (iframe && iframe.id) {
+          if (!this.youtubePlayers.has(iframe.id)) {
+            this.initYouTubePlayer(iframe);
           }
           
-          // 使用 YouTube API 控制播放
-          if (this.youtubePlayersReady && iframe.id) {
+          if (this.youtubePlayersReady) {
             const player = this.youtubePlayers.get(iframe.id);
             if (player && player.playVideo) {
               try {
+                player.mute();
                 player.playVideo();
               } catch (e) {
                 console.warn('YouTube 播放失败:', e);
@@ -481,9 +494,15 @@
       
       createSwiperConfig() {
         const self = this;
+        const additionalSlides = Math.max(
+          this.settings.desktopItems,
+          this.settings.tabletItems,
+          this.settings.mobileItems
+        );
         
         return {
           loop: true,
+          loopAdditionalSlides: additionalSlides,
           autoplay: {
             delay: this.settings.autoplayDelay,
             disableOnInteraction: false,
@@ -504,28 +523,21 @@
           breakpoints: {
             0: {
               effect: 'slide',
-              slidesPerView: this.settings.mobileItems,
-              centeredSlides: false,
+              slidesPerView: this.settings.enableSneakPeakMobile ? 'auto' : this.settings.mobileItems,
+              centeredSlides: this.settings.enableSneakPeakMobile,
               spaceBetween: this.settings.mobileSpacing
             },
             769: {
               effect: 'slide',
-              slidesPerView: this.settings.tabletItems,
-              centeredSlides: false,
+              slidesPerView: this.settings.enableSneakPeakTablet ? 'auto' : this.settings.tabletItems,
+              centeredSlides: this.settings.enableSneakPeakTablet,
               spaceBetween: this.settings.tabletSpacing
             },
             1025: {
-              effect: this.settings.enableSneakPeakDesktop ? 'coverflow' : 'slide',
-              slidesPerView: 'auto',
+              effect: 'slide',
+              slidesPerView: this.settings.enableSneakPeakDesktop ? 'auto' : this.settings.desktopItems,
               centeredSlides: this.settings.enableSneakPeakDesktop,
-              spaceBetween: 16,
-              coverflowEffect: this.settings.enableSneakPeakDesktop ? {
-                rotate: 0,
-                stretch: 0,
-                depth: 100,
-                modifier: 2,
-                slideShadows: false
-              } : undefined
+              spaceBetween: this.settings.desktopSpacing
             }
           },
           
@@ -631,6 +643,10 @@
       const settings = {
         autoplayDelay: {{ section.settings.autoplay_delay }},
         enableSneakPeakDesktop: {{ section.settings.enable_sneak_peak_desktop | json }},
+        enableSneakPeakTablet: {{ section.settings.enable_sneak_peak_tablet | json }},
+        enableSneakPeakMobile: {{ section.settings.enable_sneak_peak_mobile | json }},
+        desktopItems: {{ section.settings.desktop_items | default: 3 }},
+        desktopSpacing: {{ section.settings.desktop_spacing }},
         mobileItems: {{ section.settings.mobile_items }},
         mobileSpacing: {{ section.settings.mobile_spacing }},
         tabletItems: {{ section.settings.tablet_items }},
