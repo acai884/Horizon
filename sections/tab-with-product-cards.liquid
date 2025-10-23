@@ -1,0 +1,1337 @@
+<style>
+  /* CSS变量定义 */
+  :root {
+    --tab-padding-y: 15px; /* 固定上下内边距 */
+    --tab-padding-x: 24px; /* 固定左右内边距 */
+    --tab-font-size: 14px; /* 固定字体大小 */
+    --tab-line-height: 18px; /* 固定行高 */
+    --tab-border-radius: 3rem;
+    --card-border-radius: 1.5rem;
+    --card-padding: 4%;
+    --grid-gap: 2rem;
+    --focus-outline: 2px solid #0066cc;
+    --focus-outline-offset: 2px;
+    --btn-padding-y: 8px; /* 按钮上下内边距 */
+    --btn-padding-x: 16px; /* 按钮左右内边距 */
+    --btn-font-size: 14px; /* 按钮字体大小 */
+    --btn-border-radius: 2.5rem; /* 按钮圆角 */
+    --btn-gap: 8px; /* 按钮间距 */
+    --btn-margin-top: 24px; /* 按钮容器上边距 */
+  }
+
+  .section-{{ section.id }} {
+    --btn-padding-y: {{ section.settings.btn_padding_y }}px; /* 使用设置控制按钮上下内边距 */
+    --btn-padding-x: {{ section.settings.btn_padding_x }}px; /* 使用设置控制按钮左右内边距 */
+    --btn-font-size: {{ section.settings.btn_font_size }}px; /* 使用设置控制按钮字体大小 */
+    --btn-border-radius: {{ section.settings.btn_border_radius }}px; /* 使用设置控制按钮圆角 */
+    --btn-gap: {{ section.settings.btn_gap }}px; /* 使用设置控制按钮间距 */
+    --btn-margin-top: {{ section.settings.btn_margin_top }}px; /* 使用设置控制按钮容器上边距 */
+    --grid-gap: {{ section.settings.grid_gap }}px; /* 使用设置控制网格间距 */
+    --grid-gap-md: {{ section.settings.grid_gap_md }}px; /* 使用设置控制移动端网格间距 */
+  }
+  
+  @media screen and (max-width: 750px) {
+    :root {
+      --tab-padding-y: 15px; /* 保持相同的上下内边距 */
+      --tab-padding-x: 24px; /* 保持相同的左右内边距 */
+      --tab-font-size: 14px; /* 保持相同的字体大小 */
+      --tab-line-height: 18px; /* 保持相同的行高 */
+      --grid-gap: 1rem;
+      --card-padding: 5%;
+    }
+  }
+  
+  .section-{{ section.id }} {
+    padding-top: {{ section.settings.padding_top_md }}px;
+    padding-bottom: {{ section.settings.padding_bottom_md }}px;
+    background: {{ section.settings.bg_color_md }}
+  }
+  .section-{{ section.id }} .ql-page-width {
+    max-width: {{ section.settings.container_max_width }}px;
+    margin: auto;
+    padding: 0 {{ section.settings.container_padding_mb }}px;
+  }
+  @media (min-width: 768px) {
+    .section-{{ section.id }} {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+      background: {{ section.settings.bg_color }}
+    }
+    .section-{{ section.id }} .ql-page-width {
+      padding: 0 {{ section.settings.container_padding }}px;
+    }
+  }
+  .section-{{ section.id }} div:empty {
+    display: unset;
+  }
+  .section-{{ section.id }} .twpc-title {
+    font-size: var(--font_size);
+    color: var(--text_color);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-bottom: var(--padding_bottom);
+    font-weight: bold;
+    text-align: var(--align);
+  }
+  .section-{{ section.id }} .twpc-content-wrap {
+    font-size: var(--font_size);
+    color: var(--text_color);
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-bottom: var(--padding_bottom);
+    text-align: var(--align);
+    display: flex;
+    justify-content: var(--flex_align);
+  }
+  .twpc-content {
+    font-size: inherit;
+    margin: 0;
+    color: inherit;
+    line-height: 1.4;
+    max-width: 800px;
+  }
+ 
+  .full-img {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    object-fit: cover; /* 使用cover确保填满1:1容器 */
+  }
+  .twpc-tab-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--grid-gap);
+    width: fit-content; /* 桌面端宽度由内容决定 */
+    margin-left: auto; /* 水平居中 */
+    margin-right: auto; /* 水平居中 */
+    background: {{ section.settings.tab_bg }};
+    border-radius: 3rem;
+    padding: 4px; /* 外层微小的内边距 */
+  }
+  .section-{{ section.id }} .twpc-tab-ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .twpc-tab-ul::-webkit-scrollbar {
+    display: none;
+  }
+  .twpc-tab-li {
+    padding: var(--tab-padding-y) var(--tab-padding-x);
+    text-align: center;
+    display: inline-block;
+    text-wrap: nowrap;
+    cursor: pointer;
+    font-size: var(--tab-font-size);
+    line-height: var(--tab-line-height);
+    border-radius: var(--tab-border-radius);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    outline: none;
+    height: 48px; /* 固定高度：15px + 18px + 15px = 48px */
+    box-sizing: border-box;
+  }
+  
+  .twpc-tab-li:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+  .section-{{ section.id }} .twpc-tab-li[show="1"] {
+    background: {{ section.settings.tab_highlight_bg }};
+    color: {{ section.settings.tab_highlight_color }};
+    border-radius: var(--tab-border-radius);
+  }
+  .twpc-main {
+    display: none;
+  }
+  .twpc-main[show="1"] {
+    display: block;
+  }
+  .twpc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--grid-gap);
+  }
+  
+  @media screen and (max-width: 750px) {
+    .twpc-grid {
+      grid-template-columns: repeat(1, 1fr);
+      gap: var(--grid-gap-md);
+    }
+  }
+  .section-{{ section.id }} .twpc-card {
+    position: relative;
+    background: {{ section.settings.card_bg }};
+    border-radius: var(--card-border-radius);
+    overflow: hidden;
+    color: #333;
+    padding: calc(var(--card-padding) + 8px); /* 增加8px内边距 */
+    line-height: 1.3;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: auto; /* 改为自适应高度 */
+  }
+  
+  .section-{{ section.id }} .twpc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  .twpc-card:hover {
+    color: #fff;
+  }
+  .twpc-card-top {
+    position: relative;
+    z-index: 5;
+    flex: 0 0 auto; /* 固定高度，不随内容变化 */
+  }
+  .twpc-card-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: inherit;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .twpc-card-description {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    color: inherit;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .twpc-card-tag {
+    padding: 0.1rem 0.3rem;
+    background: rgba(0,0,0,.1);
+    border-radius: 0.2rem;
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .twpc-card-img-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 380px; /* 参考竞品，中等及以上屏幕最大宽度380px */
+    margin: 1.5rem auto; /* 居中显示 */
+    border-radius: 0.8rem;
+    overflow: hidden;
+    flex: 0 1 auto; /* 不再占据剩余空间，改为自适应 */
+    aspect-ratio: 1; /* 保持1:1比例 */
+  }
+  .twpc-card-btn-wrap {
+    text-align: right;
+    position: relative;
+    z-index: 5;
+    flex: 0 0 auto; /* 固定高度，不随内容变化 */
+    margin-top: auto; /* 确保按钮始终在底部 */
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--btn-gap); /* 使用变量控制按钮间距 */
+    width: 100%;
+    margin-top: var(--btn-margin-top); /* 使用变量控制按钮容器上边距 */
+  }
+  
+  .twpc-card-btn {
+    display: inline-block;
+    padding: var(--btn-padding-y) var(--btn-padding-x); /* 使用变量控制按钮内边距 */
+    border-radius: var(--btn-border-radius); /* 使用变量控制按钮圆角 */
+    text-decoration: none;
+    font-size: var(--btn-font-size); /* 使用变量控制按钮字体大小 */
+    cursor: pointer;
+    transition: opacity 0.3s ease, transform 0.2s ease;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap; /* 确保文字不换行 */
+    width: auto; /* 自适应内容宽度，不再是flex: 1 */
+    line-height: 1.2;
+  }
+  
+  .twpc-card-btn:hover {
+    opacity: .7;
+    transform: translateY(-2px);
+  }
+  
+  .section-{{ section.id }} .twpc-card-btn1 {
+    background: {{ section.settings.btn_bg1 }};
+    color: {{ section.settings.btn_color1 }};
+  }
+  .section-{{ section.id }} .twpc-card-btn2 {
+    background: {{ section.settings.btn_bg2 }};
+    color: {{ section.settings.btn_color2 }};
+  }
+  
+  /* 移动端按钮样式调整 */
+  @media screen and (max-width: 750px) {
+    .twpc-card-btn {
+      font-size: var(--btn-font-size); /* 使用变量控制按钮字体大小 */
+      padding: var(--btn-padding-y) var(--btn-padding-x); /* 使用变量控制按钮内边距 */
+    }
+    
+    /* 移动端按钮容器居中对齐 */
+    .twpc-card-btn-wrap {
+      justify-content: center; /* 移动端按钮居中对齐 */
+    }
+    
+    /* 移动端卡片顶部高度调整 */
+    .twpc-card-top {
+      min-height: auto;
+      padding-bottom: 0.5rem;
+    }
+    
+    /* 移动端标题和描述字体调整 */
+    .twpc-card-title {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .twpc-card-description {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+    }
+    
+    /* 移动端图片容器调整 */
+    .twpc-card-img-wrap {
+      max-width: 256px; /* 参考竞品，移动端最大宽度256px */
+      margin: 1.5rem auto; /* 居中显示 */
+      aspect-ratio: 1; /* 保持1:1比例 */
+    }
+  }
+  .twpc-video {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    border-radius: 0.8rem;
+    /* 修改视频容器，使其与图片容器大小一致 */
+    max-width: 380px; /* 与图片容器相同 */
+    margin: 0 auto; /* 居中显示 */
+    left: 50%;
+    transform: translateX(-50%); /* 居中对齐 */
+  }
+  .twpc-card:hover .twpc-video {
+    display: block;
+  }
+
+  /* 移动端视频播放优化 */
+  @media screen and (max-width: 750px) {
+    .section-{{ section.id }} .twpc-title {
+      font-size: var(--font_size_md);
+      padding-bottom: var(--padding_bottom_md);
+    }
+    .section-{{ section.id }} .twpc-content-wrap {
+      font-size: var(--font_size_md);
+      padding-bottom: var(--padding_bottom_md);
+    }
+    .twpc-tab-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: calc(var(--grid-gap) / 2);
+    }
+    .twpc-tab-li {
+      padding: var(--tab-padding-y) var(--tab-padding-x);
+      font-size: 1.4rem;
+    }
+    .twpc-grid {
+      grid-template-columns: repeat(1, 1fr);
+      gap: var(--grid-gap);
+    }
+    .twpc-card-top {
+      position: relative;
+      z-index: 5;
+      min-height: auto;
+    }
+    
+    /* 移动端标签栏样式 */
+    .twpc-tab-wrap {
+      width: 100%; /* 移动端宽度撑满屏幕 */
+      background: transparent; /* 移动端背景透明 */
+      padding: 0; /* 移除外层内边距 */
+    }
+    
+    .section-{{ section.id }} .twpc-tab-ul {
+      background: {{ section.settings.tab_bg }}; /* 移动端每个按钮有背景色 */
+      border-radius: 3rem;
+      padding: 4px; /* 移动端内层容器的内边距 */
+    }
+    
+    .twpc-tab-li {
+      font-size: var(--tab-font-size);
+      padding: var(--tab-padding-y) var(--tab-padding-x);
+    }
+    
+    /* 移动端视频样式调整，与图片容器保持一致 */
+    .twpc-video {
+      display: block !important;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      max-width: 256px; /* 与移动端图片容器相同 */
+      left: 50%;
+      transform: translateX(-50%); /* 居中对齐 */
+    }
+    
+    .twpc-video.video-visible {
+      opacity: 1;
+    }
+    
+    .twpc-card:hover {
+      color: #333;
+    }
+  }
+</style>
+<section class="section-{{ section.id }}">
+  <theme-tab-with-product-card sid="{{ section.id }}">
+    <div class="">
+      <div class="ql-page-width">
+        {% for block in section.blocks %}
+          {% if block.type == 'section-title' %}
+            <h2 class="twpc-title" style="
+                --font_size: {{ block.settings.font_size }}px;
+                --text_color: {{ block.settings.text_color }};
+                --font_size_md: {{ block.settings.font_size_md }}px;
+                --align: {{ block.settings.align }};
+                --padding_bottom: {{ block.settings.padding_bottom }}px;
+                --padding_bottom_md: {{ block.settings.padding_bottom_md }}px;
+              ">
+              {{block.settings.title | newline_to_br}}
+            </h2>
+          {% endif %}
+          {% if block.type == 'section-content' %}
+            <div class="twpc-content-wrap" style="
+              --font_size: {{ block.settings.font_size }}px;
+              --text_color: {{ block.settings.text_color }};
+              --font_size_md: {{ block.settings.font_size_md }}px;
+              --align: {{ block.settings.align }};
+              --flex_align: {{ block.settings.flex_align }};
+              --padding_bottom: {{ block.settings.padding_bottom }}px;
+              --padding_bottom_md: {{ block.settings.padding_bottom_md }}px;
+              ">
+              <p class="twpc-content">{{block.settings.content | newline_to_br}}</p>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="ql-page-width">
+        <div class="twpc-tab-wrap">
+          <ul class="twpc-tab-ul">
+            {% assign item_blocks = section.blocks | where: "type", "item" %}
+            {% assign valid_tabs = 0 %}
+            {% for block in item_blocks %}
+              {% if block.settings.tab != blank %}
+                {% assign valid_tabs = valid_tabs | plus: 1 %}
+                {% if valid_tabs <= 5 %}
+                  <li class="twpc-tab-li" {% if forloop.first %}show="1"{% endif %}>{{ block.settings.tab  }}</li>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="ql-page-width">
+        {% assign item_blocks = section.blocks | where: "type", "item" %}
+        {% assign valid_tabs = 0 %}
+        {% for block in item_blocks %}
+          {% if block.settings.tab != blank %}
+            {% assign valid_tabs = valid_tabs | plus: 1 %}
+            {% if valid_tabs <= 5 %}
+              <div class="twpc-main" {% if forloop.first %}show="1"{% endif %}>
+            <div class="twpc-grid">
+              {% assign card_blocks = section.blocks | where: "type", "card" %}
+              {% for card_block in card_blocks %}
+                {% if block.settings.tab == card_block.settings.tab %}
+                  {% assign prod = card_block.settings.product %}
+                  <div class="twpc-card" data-video-card>
+                    <div class="twpc-card-top">
+                      {% if card_block.settings.title != blank %}
+                        <h3 class="twpc-card-title">{{ card_block.settings.title }}</h3>
+                      {% endif %}
+                      {% if card_block.settings.content != blank %}
+                        <p class="twpc-card-description">{{ card_block.settings.content }}</p>
+                      {% endif %}
+
+                      <div>
+                        {% for tagIndex in (1..5) %}
+                          {% assign key = 'tag' | append: tagIndex %}
+                          {% if card_block.settings[key] != blank %}
+                            <span class="twpc-card-tag">{{ card_block.settings[key] }}</span>
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    </div>
+
+                    {% if prod != blank %}
+                      {% assign img = prod.images[0] %}
+                    {% endif %}
+                    {% if card_block.settings.img != blank %}
+                      {% assign img = card_block.settings.img %}
+                    {% endif %}
+                    <div class="twpc-card-img-wrap">
+                      {% if img != blank %}
+                        {{ 
+                          img
+                          | image_url: width:1280
+                          | image_tag: 
+                            loading: 'lazy',
+                            alt: img.alt,
+                            class: 'full-img',
+                            style: 'position: relative; z-index: 1;'
+                        }}
+                      {% endif %}
+                    </div>
+                    {% comment %} 只有当至少有一个按钮有文案时才显示按钮容器 {% endcomment %}
+                    {% if card_block.settings.btn1 != blank or card_block.settings.btn2 != blank %}
+                      <div class="twpc-card-btn-wrap" style="position: relative; z-index: 3;">
+                        {% if card_block.settings.btn1 != blank %}
+                          <a class="twpc-card-btn twpc-card-btn1" href="{{ card_block.settings.link1 | default: '#' }}">{{ card_block.settings.btn1 }}</a>
+                        {% endif %}
+                        {% if card_block.settings.btn2 != blank %}
+                          <a class="twpc-card-btn twpc-card-btn2" href="{{ card_block.settings.link2 | default: '#' }}">{{ card_block.settings.btn2 }}</a>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+
+                    {% assign video = card_block.settings.video %}
+                    {% if video != blank %}
+                      {{
+                        video
+                        | video_tag:
+                          image_size: '',
+                          autoplay: false,
+                          preload: "none",
+                          loop: true,
+                          muted: true,
+                          controls: false,
+                          class: "full-img twpc-video",
+                          data-video-player: true
+                        }}
+                    {% endif %}
+                  </div>
+                {% endif %}
+            {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </theme-tab-with-product-card>
+</section>
+
+{% javascript %}
+  class TabWithProductCards extends HTMLElement {
+    constructor() {
+      super();
+      this.oTabsWrap = this.querySelector('.twpc-tab-ul')
+      this.mains = this.querySelectorAll('.twpc-main')
+      this.oTabs = this.querySelectorAll('.twpc-tab-li')
+      this.cards = this.querySelectorAll('.twpc-card')
+      this.videos = this.querySelectorAll('[data-video-player]')
+      this.isMobile = window.innerWidth <= 750
+      this.observer = null
+      this.resizeTimeout = null
+      
+      this.init()
+    }
+    
+    init() {
+      this.initTabs()
+      this.initVideoPlayback()
+      this.initVideoHover()
+      this.initResponsive()
+    }
+    
+    initResponsive() {
+      // 监听窗口大小变化，使用防抖优化性能
+      window.addEventListener('resize', () => {
+        if (this.resizeTimeout) {
+          clearTimeout(this.resizeTimeout);
+        }
+        
+        this.resizeTimeout = setTimeout(() => {
+          const newIsMobile = window.innerWidth <= 750;
+          if (newIsMobile !== this.isMobile) {
+            this.isMobile = newIsMobile;
+            // 重新初始化视频播放逻辑
+            this.cleanupVideoPlayback();
+            this.initVideoPlayback();
+          }
+        }, 250); // 250ms 防抖延迟
+      });
+    }
+    
+    cleanupVideoPlayback() {
+      // 清理现有的视频播放设置
+      if (this.observer) {
+        this.observer.disconnect();
+        this.observer = null;
+      }
+      
+      // 暂停所有视频
+      this.videos.forEach(video => {
+        if (video && typeof video.pause === 'function') {
+          video.pause();
+          video.classList.remove('video-visible');
+        }
+      });
+    }
+    
+    initTabs() {
+      // 检查标签页元素是否存在
+      if (!this.oTabs || this.oTabs.length === 0) {
+        console.warn('未找到标签页元素');
+        return;
+      }
+      
+      this.oTabs.forEach((item, i) => {
+        // 添加可访问性属性
+        item.setAttribute('role', 'tab');
+        item.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+        item.setAttribute('tabindex', i === 0 ? '0' : '-1');
+        
+        // 添加键盘导航
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.switchTab(i);
+          } else if (e.key === 'ArrowLeft' && i > 0) {
+            e.preventDefault();
+            this.switchTab(i - 1);
+          } else if (e.key === 'ArrowRight' && i < this.oTabs.length - 1) {
+            e.preventDefault();
+            this.switchTab(i + 1);
+          }
+        });
+        
+        // 修复点击事件 - 使用箭头函数确保this正确绑定
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('标签页被点击:', i); // 添加调试日志
+          this.switchTab(i);
+        });
+      });
+      
+      // 为标签页容器添加角色
+      if (this.oTabsWrap) {
+        this.oTabsWrap.setAttribute('role', 'tablist');
+        this.oTabsWrap.setAttribute('aria-label', 'Product categories');
+      }
+    }
+    
+    switchTab(index) {
+      console.log('切换到标签页:', index); // 添加调试日志
+      
+      // 检查索引是否有效
+      if (index < 0 || index >= this.oTabs.length) {
+        console.warn('无效的标签页索引:', index);
+        return;
+      }
+      
+      // 更新所有标签页状态
+      this.oTabs.forEach((tab, i) => {
+        tab.setAttribute('show', i === index ? '1' : '');
+        tab.setAttribute('aria-selected', i === index ? 'true' : 'false');
+        tab.setAttribute('tabindex', i === index ? '0' : '-1');
+      });
+      
+      // 更新内容面板
+      if (this.mains && this.mains.length > 0) {
+        this.mains.forEach((main, i) => {
+          main.setAttribute('show', i === index ? '1' : '');
+        });
+      }
+      
+      // 聚焦到当前标签页
+      if (this.oTabs[index]) {
+        this.oTabs[index].focus();
+      }
+      
+      // 滚动标签页到视图中心
+      if (this.oTabsWrap) {
+        const activeTab = this.oTabsWrap.querySelector('.twpc-tab-li[show="1"]');
+        if (activeTab) {
+          const wrapRect = this.oTabsWrap.getBoundingClientRect();
+          const tabRect = activeTab.getBoundingClientRect();
+          const scrollLeft = this.oTabsWrap.scrollLeft;
+          const offset = tabRect.left - wrapRect.left + (tabRect.width / 2) - (wrapRect.width / 2);
+          this.oTabsWrap.scrollTo({
+            left: scrollLeft + offset,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+    
+    initVideoHover() {
+      // 桌面端hover效果 - 修复视频自动播放问题
+      if (!this.isMobile) {
+        this.cards.forEach((item, i) => {
+          item.addEventListener('mouseenter', () => {
+            const video = item.querySelector('.twpc-video');
+            if (video) {
+              video.style.display = 'block';
+              video.play().catch(e => {
+                console.warn('视频播放失败:', e.message);
+              });
+            }
+          });
+          item.addEventListener('mouseleave', () => {
+            const video = item.querySelector('.twpc-video');
+            if (video) {
+              video.pause();
+              video.currentTime = 0;
+              video.style.display = 'none';
+            }
+          });
+        })
+      }
+    }
+    
+    initVideoPlayback() {
+      // 只在移动端启用Intersection Observer
+      if (!this.isMobile || !('IntersectionObserver' in window)) {
+        return
+      }
+      
+      // 错误处理：确保视频元素存在
+      const videoElements = this.querySelectorAll('[data-video-player]');
+      if (videoElements.length === 0) {
+        return;
+      }
+      
+      // 创建Intersection Observer
+      this.observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const card = entry.target
+          const video = card.querySelector('[data-video-player]')
+          
+          if (!video) return
+          
+          if (entry.isIntersecting) {
+            // 卡片进入视口，开始播放视频
+            if (video && typeof video.play === 'function') {
+              video.play().catch(e => {
+                console.warn('视频播放失败:', e.message);
+                // 静默处理：用户交互限制等情况
+              });
+              video.classList.add('video-visible');
+            }
+          } else {
+            // 卡片离开视口，暂停视频
+            if (video && typeof video.pause === 'function') {
+              video.pause();
+              video.classList.remove('video-visible');
+            }
+          }
+        })
+      }, {
+        threshold: 0.5, // 当50%的卡片进入视口时触发
+        rootMargin: '0px 0px -20% 0px' // 提前一点开始播放
+      })
+      
+      // 观察所有包含视频的卡片
+      this.cards.forEach(card => {
+        if (card.querySelector('[data-video-player]')) {
+          this.observer.observe(card)
+        }
+      })
+    }
+    
+    disconnectedCallback() {
+      // 组件销毁时清理资源
+      if (this.observer) {
+        this.observer.disconnect();
+        this.observer = null;
+      }
+      
+      // 清理防抖定时器
+      if (this.resizeTimeout) {
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = null;
+      }
+      
+      // 清理事件监听器
+      this.oTabs.forEach(tab => {
+        tab.removeEventListener('click', this.handleTabClick);
+        tab.removeEventListener('keydown', this.handleTabKeydown);
+      });
+      
+      // 清理视频元素
+      this.videos.forEach(video => {
+        if (video && typeof video.pause === 'function') {
+          video.pause();
+        }
+      });
+    }
+  }
+  
+  if (!customElements.get('theme-tab-with-product-card')) {
+    customElements.define('theme-tab-with-product-card', TabWithProductCards);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Tab with Product Cards",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Tab样式"
+    },
+    {
+      "type": "color",
+      "id": "tab_bg",
+      "label": "Tab背景色",
+      "default": "#ECEDF0"
+    },
+    {
+      "type": "color",
+      "id": "tab_highlight_bg",
+      "label": "Tab高亮背景色",
+      "default": "#000"
+    },
+    {
+      "type": "color",
+      "id": "tab_highlight_color",
+      "label": "Tab高亮文字颜色",
+      "default": "#fff"
+    },
+    {
+      "type": "header",
+      "content": "卡片样式"
+    },
+    {
+      "type": "color",
+      "id": "card_bg",
+      "label": "卡片背景色",
+      "default": "rgb(248, 249, 253)"
+    },
+    {
+      "type": "color",
+      "id": "btn_bg1",
+      "label": "按钮1背景色",
+      "default": "#000"
+    },
+    {
+      "type": "color",
+      "id": "btn_color1",
+      "label": "按钮1文字颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "btn_bg2",
+      "label": "按钮2背景色",
+      "default": "#d9d9d9"
+    },
+    {
+      "type": "color",
+      "id": "btn_color2",
+      "label": "按钮2文字颜色",
+      "default": "#333333"
+    },
+    {
+      "type": "header",
+      "content": "按钮样式设置"
+    },
+    {
+      "type": "range",
+      "id": "btn_padding_y",
+      "min": 4,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "按钮上下内边距",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "btn_padding_x",
+      "min": 8,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "按钮左右内边距",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "btn_font_size",
+      "min": 10,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "按钮字体大小",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "btn_border_radius",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "按钮圆角",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "btn_gap",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "按钮间距",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "btn_margin_top",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "按钮容器上边距",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "卡片布局"
+    },
+    {
+      "type": "range",
+      "id": "grid_gap",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "卡片间隔",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "grid_gap_md",
+      "min": 5,
+      "max": 30,
+      "step": 5,
+      "unit": "px",
+      "label": "移动端卡片间隔",
+      "default": 10
+    },
+    {
+      "type": "header",
+      "content": "模块容器样式"
+    },
+    {
+      "type": "range",
+      "id": "container_max_width",
+      "min": 1100,
+      "max": 1600,
+      "step": 5,
+      "unit": "px",
+      "label": "容器最大宽度",
+      "default": 1100
+    },
+    {
+      "type": "range",
+      "id": "container_padding",
+      "min": 10,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "电脑端容器左右填充",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "container_padding_mb",
+      "min": 10,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "移动端容器左右填充",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "分区样式设置"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "电脑端背景颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "bg_color_md",
+      "label": "移动端背景颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 300,
+      "step": 4,
+      "unit": "px",
+      "label": "电脑端上填充",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 300,
+      "step": 4,
+      "unit": "px",
+      "label": "电脑端下填充",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_top_md",
+      "min": 0,
+      "max": 300,
+      "step": 4,
+      "unit": "px",
+      "label": "移动端端上填充",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_md",
+      "min": 0,
+      "max": 300,
+      "step": 4,
+      "unit": "px",
+      "label": "移动端端下填充",
+      "default": 36
+    }
+  ],
+  "blocks": [
+    {
+      "type": "section-title",
+      "name": "Section Title",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "textarea",
+          "id": "title",
+          "label": "标题",
+          "default": "Section Title"
+        },
+        {
+          "type": "color",
+          "id": "text_color",
+          "label": "文字颜色",
+          "default": "#000000"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "min": 0,
+          "max": 80,
+          "step": 1,
+          "unit": "px",
+          "label": "电脑端文字大小",
+          "default": 34
+        },
+        {
+          "type": "range",
+          "id": "font_size_md",
+          "min": 0,
+          "max": 80,
+          "step": 1,
+          "unit": "px",
+          "label": "移动端文字大小",
+          "default": 20
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "文字对齐",
+          "options": [
+            {
+              "label":"左对齐",
+              "value": "left"
+            },
+            {
+              "label":"居中",
+              "value": "center"
+            }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "label": "电脑端底部填充",
+          "default": 40
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom_md",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "label": "移动端底部填充",
+          "default": 20
+        }
+      ]
+    },
+    {
+      "type": "section-content",
+      "name": "Section Content",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "textarea",
+          "id": "content",
+          "label": "描述",
+          "default": "Section Content"
+        },
+        {
+          "type": "color",
+          "id": "text_color",
+          "label": "文字颜色",
+          "default": "#000000"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "min": 0,
+          "max": 50,
+          "step": 1,
+          "unit": "px",
+          "label": "电脑端文字大小",
+          "default": 16
+        },
+        {
+          "type": "range",
+          "id": "font_size_md",
+          "min": 0,
+          "max": 50,
+          "step": 1,
+          "unit": "px",
+          "label": "移动端文字大小",
+          "default": 14
+        },
+        {
+          "type": "select",
+          "id": "flex_align",
+          "label": "内容对齐",
+          "options": [
+            {
+              "label":"左对齐",
+              "value": "flex-start"
+            },
+            {
+              "label":"居中",
+              "value": "center"
+            }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "select",
+          "id": "align",
+          "label": "文字对齐",
+          "options": [
+            {
+              "label":"左对齐",
+              "value": "left"
+            },
+            {
+              "label":"居中",
+              "value": "center"
+            }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "label": "电脑端底部填充",
+          "default": 40
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom_md",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "label": "移动端底部填充",
+          "default": 20
+        }
+      ]
+    },
+    {
+      "type": "item",
+      "name": "Tab",
+      "settings": [
+        {
+          "type": "text",
+          "id": "tab",
+          "label": "Tab"
+        }
+      ]
+    },
+    {
+      "type": "card",
+      "name": "Product Card",
+      "settings": [
+        {
+          "type": "text",
+          "id": "tab",
+          "label": "Tab",
+          "info": "填写对应的tab"
+        },
+        {
+          "type": "video",
+          "id": "video",
+          "label": "视频"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "产品"
+        },
+        {
+          "type": "image_picker",
+          "id": "img",
+          "label": "产品图片"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "标题"
+        },
+        {
+          "type": "textarea",
+          "id": "content",
+          "label": "内容"
+        },
+        {
+          "type": "text",
+          "id": "tag1",
+          "label": "标签1"
+        },
+        {
+          "type": "text",
+          "id": "tag2",
+          "label": "标签2"
+        },
+        {
+          "type": "text",
+          "id": "tag3",
+          "label": "标签3"
+        },
+        {
+          "type": "text",
+          "id": "tag4",
+          "label": "标签4"
+        },
+        {
+          "type": "text",
+          "id": "tag5",
+          "label": "标签5"
+        },
+        {
+          "type": "text",
+          "id": "btn1",
+          "label": "按钮1文本",
+          "default": "Learn More"
+        },
+        {
+          "type": "url",
+          "id": "link1",
+          "label": "按钮1链接"
+        },
+        {
+          "type": "text",
+          "id": "btn2",
+          "label": "按钮2文本",
+          "default": "Order Now"
+        },
+        {
+          "type": "url",
+          "id": "link2",
+          "label": "按钮2链接"
+        }
+        
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Tab Product Card 优化版",
+      "blocks": [
+        {
+          "type": "section-title"
+        },
+        {
+          "type": "section-content"
+        },
+        {
+          "type": "item",
+          "settings": {
+            "tab": "Tab Name 1"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "tab": "Tab Name 2"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "tab": "Tab Name 3"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "tab": "Tab Name 4"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "tab": "Tab Name 5"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

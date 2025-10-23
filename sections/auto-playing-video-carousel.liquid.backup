@@ -1,0 +1,1078 @@
+{% comment %}
+  检查是否已加载Swiper库，如果没有则加载CDN版本
+{% endcomment %}
+{% unless settings.swiper_loaded %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+{% endunless %}
+
+<style>
+  /* CSS变量定义 */
+  :root {
+    --card-border-radius: 26px;
+    --card-bg-color: #f5f5f5;
+    --card-padding: 30px;
+    --slide-spacing: 20px;
+    --title-font-size: 28px;
+    --title-color: #000000;
+    --description-font-size: 18px;
+    --description-color: #666666;
+    --container-max-width: {% if section.settings.container_max_width == 'full' %}100%{% else %}{{ section.settings.container_max_width }}px{% endif %};
+    --mobile-container-max-width: {% if section.settings.mobile_container_max_width == 'full' %}100%{% else %}{{ section.settings.mobile_container_max_width }}px{% endif %};
+    --container-padding: {{ section.settings.container_padding }}px;
+    --mobile-container-padding: {{ section.settings.mobile_container_padding }}px;
+    --desktop-card-height: {{ section.settings.desktop_card_height }}px;
+    --tablet-card-height: {{ section.settings.tablet_card_height }}px;
+    --mobile-card-height: {{ section.settings.mobile_card_height }}px;
+    --video-aspect-ratio: {{ section.settings.video_aspect_ratio }};
+    --card-aspect-ratio: {% if section.settings.desktop_card_height > 0 %}calc(16 / {{ section.settings.desktop_card_height | divided_by: 50 }}){% else %}16/10{% endif %};
+    
+    /* 响应式宽高比变量 */
+    --desktop-card-width: {% if section.settings.enable_sneak_peak_desktop %}var(--desktop-sneak-peek-width){% else %}calc(100% / {{ section.settings.desktop_items }} - {{ section.settings.desktop_spacing }}px * ({{ section.settings.desktop_items }} - 1) / {{ section.settings.desktop_items }}){% endif %};
+    --tablet-card-width: {% if section.settings.enable_sneak_peak_tablet %}var(--tablet-sneak-peek-width){% else %}calc(100% / {{ section.settings.tablet_items }} - {{ section.settings.tablet_spacing }}px * ({{ section.settings.tablet_items }} - 1) / {{ section.settings.tablet_items }}){% endif %};
+    --mobile-card-width: calc((100vw - var(--mobile-container-padding) * 2) / {{ section.settings.mobile_items }} - {{ section.settings.mobile_spacing }}px * ({{ section.settings.mobile_items }} - 1) / {{ section.settings.mobile_items }}); /* 简化的移动端卡片宽度计算 */
+    
+    /* 偷窥效果相关变量 - 使用Swiper内置功能替代CSS负边距 */
+    --desktop-sneak-peek-width: 450px; /* 使用固定像素值 */
+    --desktop-sneak-peek-max-width: 450px; /* 与宽度相同，避免变形 */
+    --desktop-sneak-peek-scale: 0.85; /* 减小缩放比例，突出中间卡片 */
+    --desktop-sneak-peek-prev-next-scale: 0.75; /* 调整两侧卡片缩放比例，使其更小 */
+    --desktop-sneak-peek-container-padding: 50px; /* 减少容器内边距 */
+    
+    --tablet-sneak-peek-width: 350px; /* 使用固定像素值 */
+    --tablet-sneak-peek-max-width: 350px; /* 与宽度相同，避免变形 */
+    --tablet-sneak-peek-scale: 0.85; /* 减小缩放比例，突出中间卡片 */
+    --tablet-sneak-peek-prev-next-scale: 0.75; /* 调整两侧卡片缩放比例 */
+    --tablet-sneak-peek-container-padding: 40px; /* 减少容器内边距 */
+    
+    /* 动态计算卡片最大宽度，避免在全宽布局时卡片过大 */
+    --max-card-width: min(100%, 600px);
+    
+    /* 全宽布局时卡片宽度限制 */
+    {% if section.settings.container_max_width == 'full' %}
+      --full-width-card-limit: min(var(--desktop-sneak-peek-width), 500px);
+      --full-width-tablet-card-limit: min(var(--tablet-sneak-peek-width), 400px);
+    {% endif %}
+  }
+
+  .section-{{ section.id }} {
+    padding-top: {{ section.settings.padding_top }}px;
+    padding-bottom: {{ section.settings.padding_bottom }}px;
+    background-color: {{ section.settings.bg_color }};
+  }
+
+  .video-carousel-container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 var(--container-padding);
+    container-type: inline-size; /* 启用容器查询 */
+  }
+
+  .video-carousel-title {
+    text-align: center;
+    margin-bottom: var(--title-margin-bottom, 30px);
+    font-size: var(--title-font-size, 28px);
+    color: var(--title-color, #000000);
+    font-weight: var(--title-font-weight, bold);
+  }
+
+  /* Swiper容器样式 */
+  .swiper-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .swiper-wrapper {
+    display: flex;
+    transition-property: transform;
+  }
+
+  /* 卡片样式 */
+  .swiper-slide {
+    width: 100%;
+    flex-shrink: 0;
+    aspect-ratio: var(--card-aspect-ratio, 16/10);
+    max-height: var(--desktop-card-height, 500px);
+  }
+
+  .video-card {
+    background-color: var(--card-bg-color);
+    border-radius: var(--card-border-radius);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    aspect-ratio: var(--card-aspect-ratio, 16/10);
+  }
+
+  .video-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* 视频容器样式 */
+  .video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--video-aspect-ratio, 16/10);
+    overflow: hidden;
+  }
+
+  .video-container video,
+  .carousel-video,
+  .carousel-video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-top-left-radius: var(--card-border-radius);
+    border-top-right-radius: var(--card-border-radius);
+  }
+
+  .carousel-video-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* 卡片内容样式 */
+  .card-content {
+    padding: var(--card-padding);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-title {
+    font-size: var(--title-font-size);
+    color: var(--title-color);
+    margin: 0 0 16px 0;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .card-description {
+    font-size: var(--description-font-size);
+    color: var(--description-color);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* 导航箭头样式 */
+  .swiper-button-next,
+  .swiper-button-prev {
+    color: {{ section.settings.nav_arrow_color }};
+    background-color: {{ section.settings.nav_arrow_bg }};
+    width: {{ section.settings.nav_arrow_size }}px;
+    height: {{ section.settings.nav_arrow_size }}px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .swiper-button-next:hover,
+  .swiper-button-prev:hover {
+    background-color: {{ section.settings.nav_arrow_hover_bg }};
+    transform: scale(1.1);
+  }
+
+  .swiper-button-next::after,
+  .swiper-button-prev::after {
+    font-size: {{ section.settings.nav_arrow_icon_size }}px;
+  }
+
+  /* 平板端样式 */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      /* 设置平板端卡片高度 */
+      .swiper-slide {
+        aspect-ratio: var(--card-aspect-ratio, 16/10);
+        max-height: var(--tablet-card-height, 400px);
+      }
+      
+      /* 启用偷窥效果 - 移除负边距，使用Swiper内置功能 */
+      {% if section.settings.enable_sneak_peak_tablet %}
+      .swiper-slide {
+        width: {% if section.settings.container_max_width == 'full' %}var(--full-width-tablet-card-limit){% else %}var(--tablet-sneak-peek-width){% endif %}; /* 使用变量控制宽度，全宽时限制最大宽度 */
+        max-width: var(--tablet-sneak-peek-max-width); /* 使用变量控制最大宽度 */
+        opacity: 0.5; /* 进一步降低非活跃卡片基础透明度，突出中间卡片 */
+        transform: scale(var(--tablet-sneak-peek-scale)); /* 使用变量控制缩放比例 */
+        transition: all 0.3s ease; /* 添加平滑过渡效果 */
+      }
+      
+      .swiper-slide-active,
+      .swiper-slide-duplicate-active {
+        opacity: 1; /* 活跃卡片完全不透明 */
+        transform: scale(1); /* 活跃卡片恢复原始大小 */
+        width: {% if section.settings.container_max_width == 'full' %}var(--full-width-tablet-card-limit){% else %}var(--tablet-sneak-peek-width){% endif %}; /* 保持相同的宽度，全宽时限制最大宽度 */
+        max-width: var(--tablet-sneak-peek-max-width); /* 保持相同的最大宽度 */
+        z-index: 10; /* 确保活跃卡片在最上层 */
+      }
+      
+      .swiper-slide-prev,
+      .swiper-slide-next,
+      .swiper-slide-duplicate-prev,
+      .swiper-slide-duplicate-next {
+        width: {% if section.settings.container_max_width == 'full' %}var(--full-width-tablet-card-limit){% else %}var(--tablet-sneak-peek-width){% endif %}; /* 保持相同的宽度，全宽时限制最大宽度 */
+        max-width: var(--tablet-sneak-peek-max-width); /* 保持相同的最大宽度 */
+        opacity: 0.75; /* 两侧卡片稍微透明一些，但比非活跃卡片更明显 */
+        transform: scale(var(--tablet-sneak-peek-prev-next-scale)); /* 使用变量控制缩放比例 */
+      }
+      
+      /* 确保Swiper容器有足够的空间显示偷窥效果 */
+      .swiper-container {
+        overflow: hidden; /* 确保溢出隐藏 */
+        padding: 0 var(--tablet-sneak-peek-container-padding); /* 使用变量控制内边距 */
+      }
+      {% else %}
+      /* 不启用偷窥效果 - 平分容器宽度 */
+      .swiper-slide {
+        width: calc(100% / {{ section.settings.tablet_items }} - {{ section.settings.tablet_spacing }}px * ({{ section.settings.tablet_items }} - 1) / {{ section.settings.tablet_items }});
+        margin-right: {{ section.settings.tablet_spacing }}px;
+      }
+      .swiper-slide:last-child {
+        margin-right: 0;
+      }
+      {% endif %}
+    }
+
+  /* 桌面端样式 */
+    @media (min-width: 1025px) {
+      /* 启用偷窥效果 - 移除负边距，使用Swiper内置功能 */
+      {% if section.settings.enable_sneak_peak_desktop %}
+      .swiper-slide {
+        width: {% if section.settings.container_max_width == 'full' %}var(--full-width-card-limit){% else %}var(--desktop-sneak-peek-width){% endif %}; /* 使用变量控制宽度，全宽时限制最大宽度 */
+        max-width: var(--desktop-sneak-peek-max-width); /* 使用变量控制最大宽度 */
+        opacity: 0.5; /* 进一步降低非活跃卡片基础透明度，突出中间卡片 */
+        transform: scale(var(--desktop-sneak-peek-scale)); /* 使用变量控制缩放比例 */
+        transition: all 0.3s ease; /* 添加平滑过渡效果 */
+      }
+      
+      .swiper-slide-active,
+      .swiper-slide-duplicate-active {
+        opacity: 1; /* 活跃卡片完全不透明 */
+        transform: scale(1); /* 活跃卡片恢复原始大小 */
+        width: {% if section.settings.container_max_width == 'full' %}var(--full-width-card-limit){% else %}var(--desktop-sneak-peek-width){% endif %}; /* 保持相同的宽度，全宽时限制最大宽度 */
+        max-width: var(--desktop-sneak-peek-max-width); /* 保持相同的最大宽度 */
+        z-index: 10; /* 确保活跃卡片在最上层 */
+      }
+      
+      .swiper-slide-prev,
+      .swiper-slide-next,
+      .swiper-slide-duplicate-prev,
+      .swiper-slide-duplicate-next {
+        width: {% if section.settings.container_max_width == 'full' %}var(--full-width-card-limit){% else %}var(--desktop-sneak-peek-width){% endif %}; /* 保持相同的宽度，全宽时限制最大宽度 */
+        max-width: var(--desktop-sneak-peek-max-width); /* 保持相同的最大宽度 */
+        opacity: 0.75; /* 两侧卡片稍微透明一些，但比非活跃卡片更明显 */
+        transform: scale(var(--desktop-sneak-peek-prev-next-scale)); /* 使用变量控制缩放比例 */
+      }
+      
+      /* 确保Swiper容器有足够的空间显示偷窥效果 */
+      .swiper-container {
+        overflow: hidden; /* 确保溢出隐藏 */
+        padding: 0 var(--desktop-sneak-peek-container-padding); /* 使用变量控制内边距 */
+      }
+      {% else %}
+      /* 不启用偷窥效果 - 平分容器宽度 */
+      .swiper-slide {
+        width: calc(100% / {{ section.settings.desktop_items }} - {{ section.settings.desktop_spacing }}px * ({{ section.settings.desktop_items }} - 1) / {{ section.settings.desktop_items }});
+        margin-right: {{ section.settings.desktop_spacing }}px;
+      }
+      .swiper-slide:last-child {
+        margin-right: 0;
+      }
+      {% endif %}
+    }
+
+  /* 移动端样式 */
+  @media (max-width: 768px) {
+    /* 设置移动端容器最大宽度 */
+    .video-carousel-container {
+      max-width: var(--mobile-container-max-width);
+    }
+    
+    /* 设置移动端卡片高度 */
+    .swiper-slide {
+      aspect-ratio: var(--mobile-aspect-ratio);
+      max-height: var(--mobile-max-height);
+      width: var(--mobile-card-width); /* 使用变量控制宽度，简化计算 */
+      max-width: none; /* 移除最大宽度限制 */
+      margin-right: var(--mobile-card-margin); /* 使用变量控制边距 */
+      flex-shrink: 0; /* 防止卡片收缩 */
+    }
+    .swiper-slide:last-child {
+      margin-right: 0; /* 最后一个卡片不需要右边距 */
+    }
+    
+    /* 设置移动端容器左右内边距 */
+    .video-carousel-container {
+      padding: 0 var(--mobile-container-padding);
+    }
+    
+    /* 确保Swiper容器在移动端不溢出 */
+    .swiper-container {
+      overflow: hidden; /* 移动端隐藏溢出，避免出现空白 */
+    }
+    
+    /* 移动端不启用偷窥效果，保持简洁的轮播体验 */
+    
+    .card-title {
+      font-size: var(--mobile-title-font-size);
+    }
+    
+    .card-description {
+      font-size: var(--mobile-description-font-size);
+    }
+  }
+</style>
+
+<section class="section-{{ section.id }}">
+  <div class="video-carousel-container">
+    <div class="swiper-container video-carousel-{{ section.id }}">
+      <div class="swiper-wrapper">
+        {% for block in section.blocks %}
+          <div class="swiper-slide block-{{ block.id }}" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
+            <div class="video-card" style="
+              --card-bg-color: {{ block.settings.card_bg_color }};
+              --card-border-radius: {{ block.settings.card_border_radius }}px;
+            ">
+              <div class="video-container">
+                {% if block.settings.video_source == 'shopify' and block.settings.video != blank %}
+                  {% render 'video',
+                    video: block.settings.video,
+                    video_class: 'carousel-video',
+                    video_autoplay: true,
+                    video_loop: true,
+                    video_style: 'width: 100%; height: 100%; object-fit: cover;',
+                    disable_controls: true,
+                    additional_attributes: 'autoplay loop muted playsinline'
+                  %}
+                {% elsif block.settings.video_source == 'youtube' and block.settings.video_url != blank %}
+                  <div class="carousel-video-wrapper">
+                    <iframe
+                      class="carousel-video"
+                      src="https://www.youtube.com/embed/{{ block.settings.video_url.id }}?autoplay=1&mute=1&loop=1&playlist={{ block.settings.video_url.id }}&controls=0&showinfo=0&modestbranding=1&rel=0"
+                      frameborder="0"
+                      allow="autoplay; encrypted-media"
+                      allowfullscreen
+                      style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; border-top-left-radius: var(--card-border-radius); border-top-right-radius: var(--card-border-radius);"
+                    ></iframe>
+                  </div>
+                {% else %}
+                  <div class="video-placeholder" style="
+                    width: 100%;
+                    height: 100%;
+                    background-color: #e0e0e0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-top-left-radius: var(--card-border-radius);
+                    border-top-right-radius: var(--card-border-radius);
+                  ">
+                    <span style="color: #999; font-size: 18px;">视频占位符</span>
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="card-content">
+                {% if block.settings.title != blank %}
+                  <h3 class="card-title" style="
+                    font-size: {{ block.settings.title_font_size }}px;
+                    color: {{ block.settings.title_color }};
+                  ">{{ block.settings.title }}</h3>
+                {% endif %}
+                
+                {% if block.settings.description != blank %}
+                  <p class="card-description" style="
+                    font-size: {{ block.settings.description_font_size }}px;
+                    color: {{ block.settings.description_color }};
+                  ">{{ block.settings.description }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <div class="swiper-button-next"></div>
+      <div class="swiper-button-prev"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    initSwiper();
+  });
+
+  function initSwiper() {
+    // 如果已存在swiper实例，先销毁它
+    if (window.videoCarouselSwiper) {
+      window.videoCarouselSwiper.destroy(true, true);
+    }
+    
+    // 获取偷窥效果设置
+    const enableSneakPeakDesktop = {{ section.settings.enable_sneak_peak_desktop | json }};
+    const enableSneakPeakTablet = {{ section.settings.enable_sneak_peak_tablet | json }};
+    
+    window.videoCarouselSwiper = new Swiper('.video-carousel-{{ section.id }}', {
+      // 轮播配置
+      slidesPerView: 'auto', // 使用auto让CSS控制宽度
+      spaceBetween: 0,
+      centeredSlides: true, // 始终启用居中，确保偷窥效果正常
+      loop: true,
+      loopAdditionalSlides: 2, // 减少循环幻灯片数量，避免重叠
+      watchSlidesProgress: true, // 监视幻灯片进度
+      watchSlidesVisibility: true, // 监视幻灯片可见性
+      autoplay: {
+        delay: {{ section.settings.autoplay_delay }},
+        disableOnInteraction: false,
+        pauseOnMouseEnter: false
+      },
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+      breakpoints: {
+        // 移动端配置
+        0: {
+          slidesPerView: {{ section.settings.mobile_items }}, // 使用设置值
+          centeredSlides: true, // 默认居中显示，确保移动端体验一致
+          spaceBetween: {{ section.settings.mobile_spacing }},
+          loopAdditionalSlides: 2 // 减少循环幻灯片数量
+        },
+        // 平板端配置
+        769: {
+          slidesPerView: 'auto', // 使用auto让CSS控制宽度
+          centeredSlides: true, // 始终启用居中，确保偷窥效果正常
+          spaceBetween: 20, // 使用固定间距而不是负边距
+          loopAdditionalSlides: 1 // 减少循环幻灯片数量，避免重叠
+        },
+        // 桌面端配置
+        1025: {
+          slidesPerView: 'auto', // 使用auto让CSS控制宽度
+          centeredSlides: true, // 始终启用居中，确保偷窥效果正常
+          spaceBetween: 20, // 使用固定间距而不是负边距
+          loopAdditionalSlides: 1 // 减少循环幻灯片数量，避免重叠
+        }
+      },
+      on: {
+        // 初始化后触发
+        init: function() {
+          // 确保视频自动播放
+          this.slides.forEach((slide) => {
+            const video = slide.querySelector('video');
+            const iframe = slide.querySelector('iframe');
+            
+            if (video) {
+              video.play().catch(e => {
+                console.warn('视频自动播放失败:', e);
+              });
+            }
+            
+            // 对于YouTube视频，由于使用了autoplay参数，应该会自动播放
+            if (iframe) {
+              // YouTube视频通过URL参数控制，不需要额外的JS控制
+              console.log('YouTube视频已设置为自动播放');
+            }
+          });
+        },
+        // 切换幻灯片时触发
+        slideChange: function() {
+          // 暂停所有视频
+          this.slides.forEach((slide) => {
+            const video = slide.querySelector('video');
+            const iframe = slide.querySelector('iframe');
+            
+            if (video) {
+              video.pause();
+            }
+            
+            // 对于YouTube视频，由于使用了loop参数，会继续循环播放
+            // 如果需要暂停，可以使用YouTube API，但这需要更复杂的实现
+          });
+          
+          // 播放当前幻灯片的视频
+          const activeSlide = this.slides[this.activeIndex];
+          const activeVideo = activeSlide.querySelector('video');
+          
+          if (activeVideo) {
+            activeVideo.play().catch(e => {
+              console.warn('视频播放失败:', e);
+            });
+          }
+          
+          // YouTube视频会根据URL参数自动播放
+          const activeIframe = activeSlide.querySelector('iframe');
+          if (activeIframe) {
+            console.log('YouTube视频已设置为自动播放');
+          }
+        }
+      }
+    });
+  }
+
+  // Shopify主题编辑器事件监听
+  if (Shopify.designMode) {
+    // 监听section设置更改
+    document.addEventListener('shopify:section:load', function(event) {
+      if (event.detail.sectionId === '{{ section.id }}') {
+        initSwiper();
+      }
+    });
+
+    // 监听block设置更改
+    document.addEventListener('shopify:block:select', function(event) {
+      if (event.detail.sectionId === '{{ section.id }}') {
+        const blockId = event.detail.blockId;
+        const slides = document.querySelectorAll('.swiper-slide');
+        
+        // 查找对应block的slide索引
+        let slideIndex = -1;
+        slides.forEach((slide, index) => {
+          // 检查slide是否有blockId属性
+          const slideBlockId = slide.getAttribute('data-block-id');
+          if (slideBlockId === blockId) {
+            slideIndex = index;
+          }
+        });
+        
+        // 如果没找到，尝试通过class查找
+        if (slideIndex === -1) {
+          slideIndex = Array.from(slides).findIndex(slide => {
+            return slide.classList.contains(`block-${blockId}`);
+          });
+        }
+        
+        if (slideIndex !== -1 && window.videoCarouselSwiper) {
+          window.videoCarouselSwiper.slideTo(slideIndex);
+        }
+      }
+    });
+
+    // 监听设置更改
+    document.addEventListener('shopify:section:select', function(event) {
+      if (event.detail.sectionId === '{{ section.id }}') {
+        // 重新初始化轮播以应用新设置
+        setTimeout(initSwiper, 100);
+      }
+    });
+
+    // 监听设置更改
+    document.addEventListener('shopify:section:deselect', function(event) {
+      if (event.detail.sectionId === '{{ section.id }}') {
+        // 重新初始化轮播以应用新设置
+        setTimeout(initSwiper, 100);
+      }
+    });
+  }
+</script>
+
+{% schema %}
+{
+  "name": "视频轮播",
+  "settings": [
+    {
+      "type": "header",
+      "content": "轮播设置"
+    },
+    {
+      "type": "header",
+      "content": "桌面端设置"
+    },
+    {
+      "type": "range",
+      "id": "desktop_card_height",
+      "min": 300,
+      "max": 800,
+      "step": 10,
+      "unit": "px",
+      "label": "卡片高度",
+      "default": 500,
+      "info": "设置桌面端视频轮播卡片的高度"
+    },
+    {
+      "type": "range",
+      "id": "desktop_items",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "个",
+      "label": "可见卡片数量",
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "desktop_spacing",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "卡片间距",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sneak_peak_desktop",
+      "label": "启用偷窥效果",
+      "default": true,
+      "info": "启用后，左右两侧卡片会部分可见，突出中间卡片"
+    },
+    {
+      "type": "header",
+      "content": "平板端设置"
+    },
+    {
+      "type": "range",
+      "id": "tablet_card_height",
+      "min": 250,
+      "max": 600,
+      "step": 10,
+      "unit": "px",
+      "label": "卡片高度",
+      "default": 400,
+      "info": "设置平板端视频轮播卡片的高度"
+    },
+    {
+      "type": "range",
+      "id": "tablet_items",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "unit": "个",
+      "label": "可见卡片数量",
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "tablet_spacing",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "卡片间距",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sneak_peak_tablet",
+      "label": "启用偷窥效果",
+      "default": true,
+      "info": "启用后，左右两侧卡片会部分可见，突出中间卡片"
+    },
+    {
+      "type": "header",
+      "content": "移动端设置"
+    },
+    {
+      "type": "range",
+      "id": "mobile_card_height",
+      "min": 200,
+      "max": 500,
+      "step": 10,
+      "unit": "px",
+      "label": "卡片高度",
+      "default": 300,
+      "info": "设置移动端视频轮播卡片的高度"
+    },
+    {
+      "type": "range",
+      "id": "mobile_items",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "unit": "个",
+      "label": "可见卡片数量",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "mobile_spacing",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "卡片间距",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sneak_peak_mobile",
+      "label": "启用偷窥效果",
+      "default": false,
+      "info": "移动端不建议启用偷窥效果，以保持简洁的用户体验和更好的性能"
+    },
+    {
+      "type": "header",
+      "content": "视频设置"
+    },
+    {
+      "type": "select",
+      "id": "video_aspect_ratio",
+      "label": "视频宽高比",
+      "options": [
+        {
+          "value": "16/9",
+          "label": "16:9 (宽屏)"
+        },
+        {
+          "value": "16/10",
+          "label": "16:10 (标准宽屏)"
+        },
+        {
+          "value": "4/3",
+          "label": "4:3 (传统)"
+        },
+        {
+          "value": "1/1",
+          "label": "1:1 (正方形)"
+        },
+        {
+          "value": "9/16",
+          "label": "9:16 (竖屏)"
+        }
+      ],
+      "default": "16/10",
+      "info": "设置视频区域的宽高比"
+    },
+    {
+      "type": "header",
+      "content": "自动播放设置"
+    },
+    {
+      "type": "range",
+      "id": "autoplay_delay",
+      "min": 2000,
+      "max": 9000,
+      "step": 500,
+      "unit": "ms",
+      "label": "自动播放延迟时间",
+      "default": 5000
+    },
+    {
+      "type": "header",
+      "content": "导航箭头设置"
+    },
+    {
+      "type": "color",
+      "id": "nav_arrow_color",
+      "label": "箭头颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "nav_arrow_bg",
+      "label": "箭头背景色",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "nav_arrow_hover_bg",
+      "label": "箭头悬停背景色",
+      "default": "#333333"
+    },
+    {
+      "type": "range",
+      "id": "nav_arrow_size",
+      "min": 30,
+      "max": 80,
+      "step": 5,
+      "unit": "px",
+      "label": "箭头大小",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "nav_arrow_icon_size",
+      "min": 12,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "箭头图标大小",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "容器设置"
+    },
+    {
+      "type": "select",
+      "id": "container_max_width",
+      "label": "桌面端容器最大宽度",
+      "options": [
+        {
+          "value": "full",
+          "label": "全宽"
+        },
+        {
+          "value": "1200",
+          "label": "1200px"
+        },
+        {
+          "value": "1400",
+          "label": "1400px"
+        },
+        {
+          "value": "1600",
+          "label": "1600px"
+        },
+        {
+          "value": "1800",
+          "label": "1800px"
+        },
+        {
+          "value": "2000",
+          "label": "2000px"
+        },
+        {
+          "value": "2400",
+          "label": "2400px"
+        }
+      ],
+      "default": "1400"
+    },
+    {
+      "type": "select",
+      "id": "mobile_container_max_width",
+      "label": "移动端容器最大宽度",
+      "options": [
+        {
+          "value": "full",
+          "label": "全宽"
+        },
+        {
+          "value": "480",
+          "label": "480px"
+        },
+        {
+          "value": "640",
+          "label": "640px"
+        },
+        {
+          "value": "768",
+          "label": "768px"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "range",
+      "id": "container_padding",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "label": "桌面端容器左右内边距",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "mobile_container_padding",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "移动端容器左右内边距",
+      "default": 14
+    },
+    {
+      "type": "header",
+      "content": "分区设置"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "背景颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "上内边距",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "下内边距",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "视频",
+      "settings": [
+        {
+          "type": "header",
+          "content": "视频来源"
+        },
+        {
+          "type": "select",
+          "id": "video_source",
+          "label": "视频来源",
+          "options": [
+            {
+              "value": "shopify",
+              "label": "Shopify视频库"
+            },
+            {
+              "value": "youtube",
+              "label": "YouTube链接"
+            }
+          ],
+          "default": "shopify"
+        },
+        {
+          "type": "video",
+          "id": "video",
+          "label": "选择视频",
+          "info": "从Shopify视频库中选择视频"
+        },
+        {
+          "type": "video_url",
+          "id": "video_url",
+          "label": "YouTube视频链接",
+          "accept": ["youtube"],
+          "info": "输入YouTube视频链接"
+        },
+        {
+          "type": "header",
+          "content": "卡片设置"
+        },
+        {
+          "type": "color",
+          "id": "card_bg_color",
+          "label": "卡片背景色",
+          "default": "#f5f5f5"
+        },
+        {
+          "type": "range",
+          "id": "card_border_radius",
+          "min": 0,
+          "max": 50,
+          "step": 2,
+          "unit": "px",
+          "label": "卡片圆角",
+          "default": 26
+        },
+        {
+          "type": "header",
+          "content": "标题设置"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "标题",
+          "default": "视频标题"
+        },
+        {
+          "type": "range",
+          "id": "title_font_size",
+          "min": 14,
+          "max": 36,
+          "step": 1,
+          "unit": "px",
+          "label": "标题字体大小",
+          "default": 28
+        },
+        {
+          "type": "range",
+          "id": "card_title_font_size_mobile",
+          "min": 12,
+          "max": 28,
+          "step": 1,
+          "unit": "px",
+          "label": "移动端标题字体大小",
+          "default": 20
+        },
+        {
+          "type": "color",
+          "id": "title_color",
+          "label": "标题颜色",
+          "default": "#000000"
+        },
+        {
+          "type": "header",
+          "content": "描述设置"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "描述",
+          "default": "这是视频的描述文字，可以介绍视频的内容和特点。"
+        },
+        {
+          "type": "range",
+          "id": "description_font_size",
+          "min": 12,
+          "max": 24,
+          "step": 1,
+          "unit": "px",
+          "label": "描述字体大小",
+          "default": 18
+        },
+        {
+          "type": "range",
+          "id": "card_description_font_size_mobile",
+          "min": 10,
+          "max": 20,
+          "step": 1,
+          "unit": "px",
+          "label": "移动端描述字体大小",
+          "default": 14
+        },
+        {
+          "type": "color",
+          "id": "description_color",
+          "label": "描述颜色",
+          "default": "#666666"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "视频轮播",
+      "blocks": [
+        {
+          "type": "slide",
+          "settings": {
+            "title": "示例视频 1",
+            "description": "这是第一个示例视频的描述文字。"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "title": "示例视频 2",
+            "description": "这是第二个示例视频的描述文字。"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "title": "示例视频 3",
+            "description": "这是第三个示例视频的描述文字。"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
