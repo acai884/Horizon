@@ -40,13 +40,14 @@
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
     background-color: {{ section.settings.bg_color }};
+    overflow: visible;
   }
 
   .video-carousel-container {
     max-width: var(--container-max-width);
     margin: 0 auto;
     padding: 0 var(--container-padding);
-    container-type: inline-size; /* 启用容器查询 */
+    overflow: visible;
   }
 
   .video-carousel-title {
@@ -60,9 +61,8 @@
   /* Swiper容器样式 */
   .swiper-container {
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
-    contain: layout style paint;
   }
 
   .swiper-wrapper {
@@ -75,7 +75,17 @@
   .swiper-slide {
     flex-shrink: 0;
     max-height: var(--desktop-card-height, 500px);
-    contain: layout style paint;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  
+  /* Peeking效果：非激活卡片轻微透明和缩小 */
+  .swiper-slide:not(.swiper-slide-active) {
+    opacity: 0.6;
+  }
+  
+  .swiper-slide-active {
+    opacity: 1;
+    z-index: 2;
   }
 
   .video-card {
@@ -482,19 +492,19 @@
           breakpoints: {
             0: {
               effect: 'slide',
-              slidesPerView: this.settings.enableSneakPeakMobile ? 1.2 : this.settings.mobileItems,
+              slidesPerView: this.settings.enableSneakPeakMobile ? 1.15 : this.settings.mobileItems,
               centeredSlides: this.settings.enableSneakPeakMobile,
               spaceBetween: this.settings.mobileSpacing
             },
             769: {
               effect: 'slide',
-              slidesPerView: this.settings.enableSneakPeakTablet ? 2.2 : this.settings.tabletItems,
+              slidesPerView: this.settings.enableSneakPeakTablet ? 1.8 : this.settings.tabletItems,
               centeredSlides: this.settings.enableSneakPeakTablet,
               spaceBetween: this.settings.tabletSpacing
             },
             1025: {
               effect: 'slide',
-              slidesPerView: this.settings.enableSneakPeakDesktop ? 2.5 : this.settings.desktopItems,
+              slidesPerView: this.settings.enableSneakPeakDesktop ? 1.6 : this.settings.desktopItems,
               centeredSlides: this.settings.enableSneakPeakDesktop,
               spaceBetween: 16
             }
