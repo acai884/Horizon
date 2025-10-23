@@ -177,12 +177,6 @@
     .swiper-slide {
       max-height: var(--tablet-card-height, 400px);
     }
-    
-    {% if section.settings.enable_sneak_peak_tablet %}
-    .swiper-slide {
-      width: calc(100% / {{ section.settings.tablet_items }} - {{ section.settings.tablet_spacing | minus: 4 }}px);
-    }
-    {% endif %}
   }
 
   /* 桌面端样式 */
@@ -190,13 +184,6 @@
     .swiper-slide {
       max-height: var(--desktop-card-height, 450px);
     }
-    
-    {% if section.settings.enable_sneak_peak_desktop %}
-    .swiper-slide {
-      width: calc((100% - 32px) / 3);
-      transition: all 0.3s ease;
-    }
-    {% endif %}
   }
 
   /* 移动端样式 */
@@ -210,12 +197,6 @@
       max-height: var(--mobile-card-height);
       flex-shrink: 0;
     }
-    
-    {% if section.settings.enable_sneak_peak_mobile %}
-    .swiper-slide {
-      width: calc(100% / {{ section.settings.mobile_items }} - {{ section.settings.mobile_spacing | minus: 4 }}px);
-    }
-    {% endif %}
     
     .card-title {
       font-size: var(--mobile-title-font-size);
@@ -501,19 +482,19 @@
           breakpoints: {
             0: {
               effect: 'slide',
-              slidesPerView: this.settings.mobileItems,
+              slidesPerView: this.settings.enableSneakPeakMobile ? 1.2 : this.settings.mobileItems,
               centeredSlides: this.settings.enableSneakPeakMobile,
               spaceBetween: this.settings.mobileSpacing
             },
             769: {
               effect: 'slide',
-              slidesPerView: this.settings.tabletItems,
+              slidesPerView: this.settings.enableSneakPeakTablet ? 2.2 : this.settings.tabletItems,
               centeredSlides: this.settings.enableSneakPeakTablet,
               spaceBetween: this.settings.tabletSpacing
             },
             1025: {
               effect: 'slide',
-              slidesPerView: this.settings.enableSneakPeakDesktop ? 3 : this.settings.desktopItems,
+              slidesPerView: this.settings.enableSneakPeakDesktop ? 2.5 : this.settings.desktopItems,
               centeredSlides: this.settings.enableSneakPeakDesktop,
               spaceBetween: 16
             }
